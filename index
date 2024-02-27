@@ -824,6 +824,78 @@ VPC Closing comments:
 	- Site to Site VPN:	VPN over public internet between on-premises DC and AWS
 	- Direct Connect: direct private connection to a AWS
 
+-------------2/27/2023--------------- VPC Architechtre configuration with NAT Gateway ----------------------------
+Notes: (Architechtre img from cloudguru)
+	- VPC IPs:
+		- 10.0.0.0 (Used)
+		- 172.168.0.0
+		- 192.168.0.0
+	
+	- Public Subnet: 
+		- Ip: 10.0.1.0/24
+		- Security group
+		- Nat Gateway
+	
+	- Private Subnet: 
+		- Ip: 10.0.2.0/24
+		- Security group
+
+Steps: 
+	Step1:
+		- Create Custom VPC --> 10.0.0.0/16
+		- After creating VPC the default created items are:
+			- Routing table --> main
+			- Network ACLs  --> 1
+			- Security Group --> 1
+	
+	Step2:
+		- Create Subnet	
+			- Private subnet (10.0.1.0/24)
+			- Public subnet (10.0.2.0/24)
+		- Note: Each AZ can have only one subnet, also AZ name is just a name it can be different-2 for different-2 account, Basically most people choose the AZ-1a but it can different for other account like AZ-1b.
+	
+	Step3:
+		- Create Internet Gateway and attached to the our created VPC
+		- Note: Only one IGW can connect to per VPC
+	
+	Step4: 
+		Create New Route table for public route:
+			- Attach your VPC
+			- Add routes 0.0.0.0/0 and ::/0  + IGW
+	
+	Note:
+		- During the VPC creation one Route table created So check Subnet of that route Table
+		- Attach Public Subnet to new route tabel and Private Subnet to old created route.
+		- e.g. 
+			- Public Subnet  ---> Public Route
+			- Private Subnet ---> Private Route
+		
+	Step4: 
+		- Create Security Group
+			- New Security Group and Allow, Http & Https, for TCP, 80, 0.0.0.0/0 Port
+			- The Create security group should be enable/allow for the public ip
+				- e.g. 
+					- All IPV4 imp 			Custom			10.0.1.0/24
+					- https/http			Custom			10.0.1.0/24
+					- SSH					Custom			10.0.1.0/24
+		- Now :
+			- You have allowed the Private Security Group to connect through Privately by the IP (instance to intsance communication)
+	
+	Notes:
+		- For Private & public instance communication, you should Allow Private Communication by allowoing the security Group, But private one not access the internet.
+	
+NAT Gateway: 
+	- Create NAT gateway
+	- Add NAT Gateway to the router table, Basically to the private router table 
+		- e.g. 0.0.0.0/0 		--->		NAT Gateway (created one)
+	
+	So Final router & Subnet Changes:
+		- Public Subnet / Private Router 			----> 			Nat Gateway
+		- Public Router								----> 			IGW	
+		
+Result: 
+	- Your VPC is created with NAT Gateway, Now you can use in Lambda or EC2 instance, remember attached only the private subnet to the Lambda so it can access internet through the NAT Gateway.
+
 ------------------------------------------------------------------------------------------------------------------
 Date: 25/1/2024
 
@@ -3641,6 +3713,29 @@ API Gateway - Architechtre:
 	- Apply simple domain name & SSL certificates
 	- Can apply forwarding and transformation rules at the API Gateway level
 
+-----------Date:2/27/2024---------***API Gateway with Version & Environments***---------------------------------
+
+API Gateway with Version & Environments:
+	- Create Lambda Function
+	- Create Versions --> v1, v2, $Latest
+	- Create Alias of Lambda ---> Prod, Test, Dev
+		- So alias & version
+			- Prod --> v1
+			- Test --> v2
+			- Dev  --> $Latest
+		
+	- Create Resouces
+	- Create Method
+		- Attach Lambda with variable	
+		- ARN of Lambda : ${stageVariable.lambdaAlias}
+	- You Need to give permission to the API Gateway [Resource Based Policy]
+		- Note: Give you command just run after change
+	- For testing through API --> Give the Stage Variable 
+	- Deploy API Gateway --> DEV, Stage/Test, Prod
+	- Add Stage variable in every stage [lambdaAlias: Dev] --> 
+	
+Result:
+	- Now Api-gateway have three stage with three lambda function alias-versions.
 
 ------------------------------------------------------------------------------------------------------------------
 Date : 2/14/2024   ---> AWS CICD: CodeCommit, codePipeline, CodeBuild, CodeDeploy <---
@@ -4960,11 +5055,11 @@ Cloudwatch Evidently:
 	- Store evalutation events in CloudWatch logs or S3
 
 
-----------------------------------------------------------------------------------***DONE***--------------------------------------------------------------------------------------
+-----------***DONE***----------------------***DONE***----------------------***DONE***-----------------------------***DONE***--------------
 
 
 
-
+// Prepration - 20/2/2024
 
 
 
@@ -5047,4 +5142,3 @@ Cloudwatch Evidently:
 
 3 to 7 revision 
 8-9 exam date
-	
